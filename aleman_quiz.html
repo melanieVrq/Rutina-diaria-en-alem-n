@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Un día en alemán – Video Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e1a;
+    --surface: #1a1a2e;
+    --accent: #f5c842;
+    --accent2: #4ecdc4;
+    --correct: #56e39f;
+    --wrong: #ff6b6b;
+    --text: #f0f0f0;
+    --muted: #888;
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  h1 {
+    font-family: 'Baloo 2', cursive;
+    font-size: 2rem;
+    color: var(--accent);
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  .player-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 780px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(245,200,66,0.15);
+    background: #000;
+  }
+
+  video {
+    width: 100%;
+    display: block;
+  }
+
+  /* Custom controls */
+  .controls {
+    background: linear-gradient(transparent, rgba(0,0,0,0.9));
+    padding: 12px 16px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .btn-ctrl {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    transition: transform 0.15s, color 0.15s;
+  }
+  .btn-ctrl:hover { color: var(--accent); transform: scale(1.15); }
+  .btn-ctrl svg { width: 26px; height: 26px; }
+
+  .progress-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .time-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .progress-bar-wrap {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 99px;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    width: 0%;
+    transition: width 0.1s linear;
+    pointer-events: none;
+  }
+
+  /* Question markers on progress bar */
+  .q-marker {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    background: var(--accent2);
+    border-radius: 50%;
+    border: 2px solid #fff;
+    pointer-events: none;
+  }
+
+  .volume-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  input[type=range].vol-slider {
+    -webkit-appearance: none;
+    width: 72px;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 99px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range].vol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  /* Overlay */
+  .quiz-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,10,26,0.93);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 20px;
+    text-align: center;
+    z-index: 10;
+    animation: fadeIn 0.35s ease;
+  }
+  .quiz-overlay.active { display: flex; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .quiz-badge {
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(245,200,66,0.1);
+    border: 1px solid rgba(245,200,66,0.3);
+    padding: 4px 14px;
+    border-radius: 99px;
+    margin-bottom: 14px;
+  }
+
+  .quiz-question {
+    font-family: 'Baloo 2', cursive;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #fff;
+    max-width: 540px;
+    line-height: 1.4;
+    margin-bottom: 22px;
+  }
+
+  .answers {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 460px;
+  }
+
+  .ans-btn {
+    background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.12);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 13px 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .ans-btn .letter {
+    display: inline-flex;
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 6px;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .ans-btn:hover:not(:disabled) {
+    background: rgba(245,200,66,0.08);
+    border-color: var(--accent);
+    transform: translateX(4px);
+  }
+  .ans-btn:hover:not(:disabled) .letter { background: var(--accent); color: #000; }
+
+  .ans-btn.correct {
+    background: rgba(86,227,159,0.12);
+    border-color: var(--correct);
+    color: var(--correct);
+  }
+  .ans-btn.correct .letter { background: var(--correct); color: #000; }
+
+  .ans-btn.wrong {
+    background: rgba(255,107,107,0.1);
+    border-color: var(--wrong);
+    color: var(--wrong);
+  }
+  .ans-btn.wrong .letter { background: var(--wrong); color: #000; }
+
+  .ans-btn:disabled { cursor: default; }
+
+  /* Result message */
+  .result-msg {
+    margin-top: 18px;
+    font-size: 1.5rem;
+    font-family: 'Baloo 2', cursive;
+    font-weight: 800;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .result-msg.show { display: flex; }
+  .result-msg .icon { font-size: 2.8rem; }
+  .result-msg .txt { color: var(--correct); }
+  .result-msg .txt.wrong { color: var(--wrong); }
+
+  @keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+
+  .continue-btn {
+    margin-top: 20px;
+    display: none;
+    background: var(--accent);
+    color: #0e0e1a;
+    font-family: 'Baloo 2', cursive;
+    font-size: 1rem;
+    font-weight: 800;
+    border: none;
+    padding: 12px 32px;
+    border-radius: 99px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(245,200,66,0.3);
+  }
+  .continue-btn.show { display: inline-flex; align-items: center; gap: 8px; }
+  .continue-btn:hover { transform: scale(1.05); box-shadow: 0 6px 30px rgba(245,200,66,0.45); }
+
+  /* Confetti */
+  #confetti-canvas {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  /* Score bar */
+  .score-bar {
+    margin-top: 18px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .score-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    border: 2px solid rgba(255,255,255,0.2);
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .score-dot.answered.correct { background: var(--correct); border-color: var(--correct); }
+  .score-dot.answered.wrong   { background: var(--wrong);   border-color: var(--wrong); }
+</style>
+</head>
+<body>
+
+<h1>🇩🇪 Un día en alemán</h1>
+
+<div class="player-wrapper" id="playerWrapper">
+  <canvas id="confetti-canvas"></canvas>
+  <video id="vid" preload="metadata">
+    <source src="video.mov" type="video/quicktime">
+    <source src="video.mov" type="video/mp4">
+    Tu navegador no soporta este video.
+  </video>
+
+  <!-- Quiz overlay -->
+  <div class="quiz-overlay" id="quizOverlay">
+    <div class="quiz-badge">⏸ Pregunta</div>
+    <div class="quiz-question" id="quizQuestion"></div>
+    <div class="answers" id="answersContainer"></div>
+    <div class="result-msg" id="resultMsg">
+      <span class="icon" id="resultIcon"></span>
+      <span class="txt" id="resultTxt"></span>
+    </div>
+    <button class="continue-btn" id="continueBtn">▶ Continuar el video</button>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn-ctrl" id="playBtn" title="Play/Pause">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+
+    <div class="progress-area">
+      <div class="progress-bar-wrap" id="progressWrap">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="time-row">
+        <span id="timeCurrent">0:00</span>
+        <span id="timeDuration">0:00</span>
+      </div>
+    </div>
+
+    <div class="volume-group">
+      <button class="btn-ctrl" id="muteBtn" title="Mute">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+      </button>
+      <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.05" value="1">
+    </div>
+  </div>
+
+  <!-- Score dots -->
+  <div class="score-bar" style="padding:0 16px 14px; justify-content:center;">
+    <span>Progreso:</span>
+    <div class="score-dot" id="dot0"></div>
+    <div class="score-dot" id="dot1"></div>
+    <div class="score-dot" id="dot2"></div>
+    <div class="score-dot" id="dot3"></div>
+  </div>
+</div>
+
+<script>
+// ─── Questions ────────────────────────────────────────────────────────────────
+const QUESTIONS = [
+  {
+    time: 26,
+    text: "¿Cómo palabra en alemán se usa para decir que vas despertando?",
+    answers: [
+      { label: "a", text: "schlafen" },
+      { label: "b", text: "aufstehen", correct: true },
+      { label: "c", text: "essen" }
+    ]
+  },
+  {
+    time: 41,
+    text: "¿Cómo se dice bañarse en alemán?",
+    answers: [
+      { label: "a", text: "duschen", correct: true },
+      { label: "b", text: "schlafen" },
+      { label: "c", text: "arbeiten" }
+    ]
+  },
+  {
+    time: 52,
+    text: "¿Cómo preguntamos la hora en alemán?",
+    answers: [
+      { label: "a", text: "Wie spät ist es?", correct: true },
+      { label: "b", text: "Wo bist du?" },
+      { label: "c", text: "Was machst du?" }
+    ]
+  },
+  {
+    time: 75, // 1:15
+    text: "¿Qué lugar ocupa el verbo en una oración?",
+    answers: [
+      { label: "a", text: "Segunda posición", correct: true },
+      { label: "b", text: "Primera posición" },
+      { label: "c", text: "Última posición" }
+    ]
+  }
+];
+
+// ─── State ─────────────────────────────────────────────────────────────────────
+let triggeredQuestions = new Set();
+let currentQuestionIdx = null;
+let answered = new Array(QUESTIONS.length).fill(null);
+let paused_for_quiz = false;
+
+// ─── DOM refs ──────────────────────────────────────────────────────────────────
+const vid          = document.getElementById('vid');
+const playBtn      = document.getElementById('playBtn');
+const muteBtn      = document.getElementById('muteBtn');
+const volSlider    = document.getElementById('volSlider');
+const progressFill = document.getElementById('progressFill');
+const progressWrap = document.getElementById('progressWrap');
+const timeCurrent  = document.getElementById('timeCurrent');
+const timeDuration = document.getElementById('timeDuration');
+const quizOverlay  = document.getElementById('quizOverlay');
+const quizQuestion = document.getElementById('quizQuestion');
+const answersContainer = document.getElementById('answersContainer');
+const resultMsg    = document.getElementById('resultMsg');
+const resultIcon   = document.getElementById('resultIcon');
+const resultTxt    = document.getElementById('resultTxt');
+const continueBtn  = document.getElementById('continueBtn');
+const canvas       = document.getElementById('confetti-canvas');
+
+// ─── Play/pause icon swap ──────────────────────────────────────────────────────
+const ICON_PLAY  = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+const ICON_PAUSE = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+const ICON_VOL   = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`;
+const ICON_MUTE  = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`;
+
+function updatePlayIcon() {
+  playBtn.innerHTML = vid.paused ? ICON_PLAY : ICON_PAUSE;
+}
+function updateVolIcon() {
+  muteBtn.innerHTML = (vid.muted || vid.volume === 0) ? ICON_MUTE : ICON_VOL;
+}
+
+// ─── Controls ──────────────────────────────────────────────────────────────────
+playBtn.addEventListener('click', () => {
+  if (paused_for_quiz) return;
+  vid.paused ? vid.play() : vid.pause();
+});
+
+muteBtn.addEventListener('click', () => {
+  vid.muted = !vid.muted;
+  updateVolIcon();
+});
+
+volSlider.addEventListener('input', () => {
+  vid.volume = volSlider.value;
+  vid.muted = vid.volume === 0;
+  updateVolIcon();
+});
+
+vid.addEventListener('play', updatePlayIcon);
+vid.addEventListener('pause', updatePlayIcon);
+
+// ─── Progress ──────────────────────────────────────────────────────────────────
+function fmt(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+vid.addEventListener('loadedmetadata', () => {
+  timeDuration.textContent = fmt(vid.duration);
+  placeMarkers();
+});
+
+vid.addEventListener('timeupdate', () => {
+  if (!vid.duration) return;
+  const pct = (vid.currentTime / vid.duration) * 100;
+  progressFill.style.width = pct + '%';
+  timeCurrent.textContent = fmt(vid.currentTime);
+  checkQuestions();
+});
+
+progressWrap.addEventListener('click', (e) => {
+  if (paused_for_quiz) return;
+  const rect = progressWrap.getBoundingClientRect();
+  const ratio = (e.clientX - rect.left) / rect.width;
+  vid.currentTime = ratio * vid.duration;
+});
+
+function placeMarkers() {
+  QUESTIONS.forEach((q, i) => {
+    const pct = (q.time / vid.duration) * 100;
+    const m = document.createElement('div');
+    m.className = 'q-marker';
+    m.id = 'marker' + i;
+    m.style.left = pct + '%';
+    progressWrap.appendChild(m);
+  });
+}
+
+// ─── Question trigger ──────────────────────────────────────────────────────────
+function checkQuestions() {
+  QUESTIONS.forEach((q, i) => {
+    if (!triggeredQuestions.has(i) && vid.currentTime >= q.time) {
+      triggeredQuestions.add(i);
+      showQuestion(i);
+    }
+  });
+}
+
+function showQuestion(idx) {
+  currentQuestionIdx = idx;
+  const q = QUESTIONS[idx];
+  vid.pause();
+  paused_for_quiz = true;
+
+  quizQuestion.textContent = q.text;
+  answersContainer.innerHTML = '';
+  resultMsg.classList.remove('show');
+  continueBtn.classList.remove('show');
+
+  q.answers.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'ans-btn';
+    btn.innerHTML = `<span class="letter">${a.label}</span>${a.text}`;
+    btn.addEventListener('click', () => handleAnswer(btn, a.correct === true, idx));
+    answersContainer.appendChild(btn);
+  });
+
+  quizOverlay.classList.add('active');
+}
+
+function handleAnswer(btn, isCorrect, idx) {
+  // Disable all
+  document.querySelectorAll('.ans-btn').forEach(b => b.disabled = true);
+  // Highlight
+  if (isCorrect) {
+    btn.classList.add('correct');
+    answered[idx] = 'correct';
+    showResult(true);
+    launchConfetti();
+  } else {
+    btn.classList.add('wrong');
+    answered[idx] = 'wrong';
+    // Show correct answer
+    document.querySelectorAll('.ans-btn').forEach(b => {
+      const letter = b.querySelector('.letter').textContent;
+      const ans = QUESTIONS[idx].answers.find(a => a.label === letter);
+      if (ans && ans.correct) b.classList.add('correct');
+    });
+    showResult(false);
+  }
+  updateScoreDots();
+  setTimeout(() => continueBtn.classList.add('show'), 600);
+}
+
+function showResult(correct) {
+  resultIcon.textContent = correct ? '🎉' : '❌';
+  resultTxt.textContent  = correct ? '¡Correcto!' : '¡Incorrecto!';
+  resultTxt.className    = 'txt' + (correct ? '' : ' wrong');
+  resultMsg.classList.add('show');
+}
+
+continueBtn.addEventListener('click', () => {
+  quizOverlay.classList.remove('active');
+  paused_for_quiz = false;
+  vid.play();
+});
+
+function updateScoreDots() {
+  answered.forEach((val, i) => {
+    const dot = document.getElementById('dot' + i);
+    if (!dot) return;
+    dot.classList.remove('answered', 'correct', 'wrong');
+    if (val) { dot.classList.add('answered', val); }
+  });
+}
+
+// ─── Confetti ──────────────────────────────────────────────────────────────────
+const ctx = canvas.getContext('2d');
+let particles = [];
+let confettiRunning = false;
+
+function resizeCanvas() {
+  const wrapper = document.getElementById('playerWrapper');
+  canvas.width  = wrapper.offsetWidth;
+  canvas.height = wrapper.offsetHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function launchConfetti() {
+  resizeCanvas();
+  particles = [];
+  const colors = ['#f5c842','#4ecdc4','#ff6b9d','#56e39f','#a78bfa','#ff9f43'];
+  for (let i = 0; i < 120; i++) {
+    particles.push({
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      vx: (Math.random() - 0.5) * 14,
+      vy: (Math.random() - 1.5) * 12,
+      size: Math.random() * 9 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rot: Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 0.3,
+      alpha: 1,
+      shape: Math.random() > 0.5 ? 'rect' : 'circle'
+    });
+  }
+  confettiRunning = true;
+  animateConfetti();
+}
+
+function animateConfetti() {
+  if (!confettiRunning) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  let alive = false;
+  particles.forEach(p => {
+    p.x  += p.vx;
+    p.y  += p.vy;
+    p.vy += 0.35;
+    p.vx *= 0.99;
+    p.rot += p.rotV;
+    p.alpha -= 0.012;
+    if (p.alpha > 0) {
+      alive = true;
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      if (p.shape === 'rect') {
+        ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.size/2, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  });
+  if (alive) requestAnimationFrame(animateConfetti);
+  else { confettiRunning = false; ctx.clearRect(0, 0, canvas.width, canvas.height); }
+}
+</script>
+</body>
+</html>
